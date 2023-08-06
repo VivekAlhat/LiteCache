@@ -1,4 +1,5 @@
 import { createServer } from "net";
+import { addMilliseconds, compareAsc } from "date-fns";
 
 const server = createServer();
 
@@ -8,6 +9,7 @@ server.on("connection", (socket) => {
   socket.write("connected to LiteCache server\r\n");
 
   const db = new Map();
+  const transactions = new Map();
 
   socket.on("data", (data) => {
     const input = data.toString("utf-8").trim();
@@ -23,18 +25,40 @@ server.on("connection", (socket) => {
           const input = args.join(" ");
           socket.write(`+${input}\r\n`);
         } else {
-          socket.write("-ERR echo expected 1 argument, received 0\r\n");
+          socket.write("-ERR expected 1 argument, received 0\r\n");
         }
         break;
       case "set":
         const [key, ...values] = args;
-        db.set(key, values.join(" "));
+        const [val, _, expiryDuration] = values;
+        db.set(key, val);
+
+        const current = new Date();
+        const expiry = addMilliseconds(current, expiryDuration);
+
+        if (expiryDuration) {
+          transactions.set(key, expiry);
+        } else {
+          transactions.delete(key);
+        }
         socket.write("+OK\r\n");
         break;
       case "get":
         const [searchKey] = args;
         const value = db.get(searchKey);
-        value ? socket.write(`+${value}\r\n`) : socket.write("Nil\r\n");
+
+        const today = new Date();
+        const expirationDate = transactions.get(searchKey);
+
+        if (expirationDate) {
+          if (compareAsc(expirationDate, today) === 1) {
+            value ? socket.write(`+${value}\r\n`) : socket.write("-Nil\r\n");
+          } else {
+            socket.write("-Nil\r\n");
+          }
+        } else {
+          value ? socket.write(`+${value}\r\n`) : socket.write("-Nil\r\n");
+        }
         break;
       case "delete":
         const [delKey] = args;
