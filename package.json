@@ -1,0 +1,17 @@
+{
+  "name": "litecache",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Redis-like experimental toy cache database",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node main.js"
+  },
+  "keywords": [
+    "Redis",
+    "Cache"
+  ],
+  "author": "Vivek Alhat",
+  "license": "MIT"
+}
