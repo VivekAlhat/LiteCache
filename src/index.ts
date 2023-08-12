@@ -16,7 +16,16 @@ server.on("connection", (socket) => {
   const expiryStore = new Map();
 
   socket.on("data", (data: string) => {
-    const commands = data.trim().split(" ");
+    const emptyQuotes = /^\s*$/;
+    const commands = data
+      .trim()
+      .split(/("[^"]+"|[^\s"]+)+/g)
+      .filter((entry) => {
+        if (!emptyQuotes.test(entry)) {
+          return entry;
+        }
+      });
+    console.log(commands);
     const [action, ...args] = commands;
 
     switch (action.toLowerCase()) {
